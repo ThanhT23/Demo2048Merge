@@ -1,0 +1,8 @@
+{
+  "engine": "cocos-creator-js",
+  "packages": "packages",
+  "name": "Demo2048Merge",
+  "id": "98c1012b-7770-4eba-8aca-41a0a7c8c3c4",
+  "version": "2.4.13",
+  "isNew": false
+}
