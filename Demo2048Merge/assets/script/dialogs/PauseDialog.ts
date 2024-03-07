@@ -5,6 +5,8 @@ const { ccclass, property } = cc._decorator;
 export default class extends cc.Component {
 
     @property(cc.Node) backgorund: cc.Node = null;
+    @property(cc.Toggle) musicToggle: cc.Toggle = null;
+    @property(cc.Node) unCheckToggle: cc.Node = null;
 
 
     // LIFE-CYCLE CALLBACKS:
@@ -18,15 +20,27 @@ export default class extends cc.Component {
         canvasSize.width = frameSize.width * canvasSize.height / frameSize.height;
         this.backgorund.setContentSize(canvasSize);
         this.backgorund.on(cc.Node.EventType.TOUCH_END, this.closeDialog, this);
+        this.musicToggle.isChecked = cc.audioEngine.getMusicVolume() > 0;
+        this.unCheckToggle.active = !this.musicToggle.isChecked;
     }
     start() {
 
     }
+    continueGame() {
+        this.closeDialog();
+    }
+    restartGame() {
+        this.closeDialog();
+        cc.game.emit("restart-game");
+    }
+
+
     closeDialog() {
         this.node.removeFromParent(true);
     }
-    getRenderTextureFromCamera() {
-
+    toggleMusic() {
+        cc.audioEngine.setMusicVolume(this.musicToggle.isChecked ? 1 : 0);
+        this.unCheckToggle.active = !this.musicToggle.isChecked;
     }
 
     // update (dt) {}

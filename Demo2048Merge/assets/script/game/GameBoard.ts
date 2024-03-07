@@ -39,8 +39,8 @@ export default class extends cc.Component {
         }
     }
     resetBoard() {
-        if (this.cellPool) {
-            this.boardCells.forEach(cell => this.cellPool.put(cell.node));
+        if (this.boardCells.length > 0) {
+            this.boardCells.forEach(cell => cell.value = 0);
             this.cellPool.put(this.activeCell.node);
         } else {
             this.boardContainer.removeAllChildren();
@@ -101,17 +101,20 @@ export default class extends cc.Component {
         })
     }
 
-    dropCell(cell: GameCell) {
+    async dropCell(cell: GameCell) {
         if (this.canDropCell()) {
             this.targetCell.node.opacity = 255;
             this.targetCell.value = cell.value;
-            this.checkMergeCell(this.targetCell);
-            this.targetCell = null;
             this.removeCell(cell);
-            return true;
+            await this.checkMergeCell(this.targetCell);
+            if(this.targetCell.value == 2048) {
+                cc.game.emit("on-congratulation");
+            }
+            this.targetCell = null;
+            return Promise.resolve(true);
         } else {
             cell.returnToStartPosition();
-            return false;
+            return Promise.resolve(false);
         }
     }
     canDropCell() {
@@ -147,13 +150,27 @@ export default class extends cc.Component {
                 let actionEndPos = neighbour.sprite.node.convertToNodeSpaceAR(cell.node.convertToWorldSpaceAR(cc.v2(0, 0)));
                 neighbour.sprite.node.runAction(cc.sequence(
                     cc.moveTo(0.2, actionEndPos),
-                    cc.callFunc(() => { neighbour.value = 0 })));
+                    cc.callFunc(() => {
+                        cc.game.emit("calculate-score", neighbour.value);
+                        neighbour.value = 0
+                    })));
             }
         }
-        canMerge && setTimeout(() => {
-            cell.value *= 2;
-            this.checkMergeCell(cell);
-        }, actionTime * 2 * 1000);
+        if (canMerge) {
+            await new Promise<void>((resolve) => {
+                setTimeout(() => {
+                    cell.value *= 2;
+                    this.checkMergeCell(cell);
+                }, actionTime * 2 * 1000);
+                this.node.on("end-check-merge", () => { resolve() });
+            })
+        } else {
+            this.node.emit("end-check-merge")
+            // return Promise.resolve();
+        }
+    }
+    canDropCellToBoard() {
+        return this.boardCells.some(m => m.cellStage == CellStage.EMPTY);
     }
 
     _getCellByLocation(location: cc.Vec2) {
